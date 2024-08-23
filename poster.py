@@ -1,13 +1,14 @@
 import logging
 from datetime import datetime
 import json
-
 import requests
+
 from telebot import TeleBot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from enums import Endpoint, PostStatus, PublicationStatus
 from logging_config import setup_logging
+
 
 setup_logging()
 logger = logging.getLogger()
@@ -19,15 +20,13 @@ class Poster:
         self.bot = TeleBot(token=bot_token)
 
     @staticmethod
-    def get_posts_by_datetime(publish_datetime: datetime):
-        restrict = json.dumps(
-            {
+    def get_full_posts(publish_datetime: datetime):
+        restrict = {
                 "publishDate": publish_datetime.date().strftime("%Y-%m-%d"),
                 "publishTime": publish_datetime.time().replace(second=0).strftime("%H:%M:%S"),
                 "status": PostStatus.AWAITS.value
-            }
-        )
-        response = requests.get(Endpoint.POST.value, params={"restrict": restrict})
+        }
+        response = requests.get(Endpoint.POST.value, params={"restrict": json.dumps(restrict)})
         result = response.json().get("result")
         error = response.json().get("error")
 
@@ -49,7 +48,7 @@ class Poster:
         return []
 
     @staticmethod
-    def formatter(posts):
+    def format_posts(posts):
         if not posts:
             return
 
@@ -66,8 +65,8 @@ class Poster:
         return formatted_posts
 
     def get_posts(self, publish_datetime: datetime):
-        posts = self.get_posts_by_datetime(publish_datetime)
-        formatted_posts = self.formatter(posts)
+        posts = self.get_full_posts(publish_datetime)
+        formatted_posts = self.format_posts(posts)
         return formatted_posts
 
     def publish_to_general_group(self, post):
