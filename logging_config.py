@@ -5,6 +5,9 @@ def setup_logging():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
     file_handler = logging.FileHandler("poster.log")
     file_handler.setLevel(logging.WARNING)
 

@@ -22,22 +22,22 @@ def main():
 
     while True:
         now = datetime.now()
-        if now.minute == 0 or now.minute == 30:
+        if now.minute == 0 or now.minute == 30 or True:
             logger.debug(f"Start publishing")
             try:
                 posts = poster.get_posts(now)
 
                 for post in posts:
                     try:
-                        poster.publish(post)
+                        message_id = poster.publish(post)
+                        logger.info(f"Post with id {post.get('id')} published")
+
+                        poster.set_message_id(post.get("id"), message_id)
+                        poster.set_status(post.get("id"), PostStatus.PUBLISHED)
 
                     except Exception as ex:
                         logger.error(f"Error publishing post {post}: {ex}")
                         poster.set_status(post.get("id"), PostStatus.ERROR)
-
-                    else:
-                        logger.info(f"Post with id {post.get('id')} published")
-                        poster.set_status(post.get("id"), PostStatus.PUBLISHED)
 
             except Exception as ex:
                 logger.error(f"Error: {ex}")

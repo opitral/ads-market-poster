@@ -49,36 +49,18 @@ class Poster:
         return []
 
     @staticmethod
-    def get_group_by_id(group_id: str):
-        response = requests.get(f"{Endpoint.GROUP.value}/{group_id}")
-        result = response.json().get("result")
-        error = response.json().get("error")
+    def formatter(posts):
+        if not posts:
+            return
 
-        if response.status_code == 200:
-            if result:
-                logger.debug(f"Found group with telegram id {result.get('groupTelegramId')}")
-                return result
-
-            elif error:
-                logger.error(f"Get group request failed with error: {error}")
-
-        else:
-            logger.error(f"Get group request failed with status code: {response.status_code}, error: {error}")
-
-    def formatter(self, posts):
         formatted_posts = []
         for post in posts:
-            group = self.get_group_by_id(post.get("groupId"))
-            if group:
-                formatted_posts.append({
-                    "id": post.get("id"),
-                    "publication": post.get("publication"),
-                    "group": group.get("groupTelegramId")
-                })
-                logger.debug(f"Post with id {post.get('id')} has been formatted")
-
-            else:
-                logger.error(f"No group found for post with id {post.get('id')}")
+            formatted_posts.append({
+                "id": post.get("id"),
+                "publication": post.get("publication"),
+                "group": post.get("groupTelegramId")
+            })
+            logger.debug(f"Post with id {post.get('id')} has been formatted")
 
         logger.debug(f"Formatted {len(posts)} posts")
         return formatted_posts
@@ -127,7 +109,7 @@ class Poster:
 
     def publish_to_group(self, group_id,  message_id):
         self.bot.forward_message(chat_id=group_id, from_chat_id=self.GENERAL_GROUP_TELEGRAM_ID, message_id=message_id)
-        logger.info(f"Post with id {group_id} has been published to target group")
+        logger.info(f"Post with message id {message_id} has been published to target group")
 
     def publish(self, post):
         group_id = post.get("group")
@@ -148,7 +130,7 @@ class Poster:
 
         if response.status_code == 200:
             if result:
-                logger.info(f"Post with id {post_id} has been set as {status.value}")
+                logger.info(f"Post with id {post_id} has been set status as {status.value}")
                 return result
 
             elif error:
@@ -156,3 +138,26 @@ class Poster:
 
         else:
             logger.error(f"Update post status request failed with status code: {response.status_code}, error: {error}")
+
+    @staticmethod
+    def set_message_id(post_id, message_id):
+        body = {
+            "id": post_id,
+            "messageId": message_id
+        }
+
+        response = requests.put(f"{Endpoint.POST.value}", json=body)
+        result = response.json().get("result")
+        error = response.json().get("error")
+
+        if response.status_code == 200:
+            if result:
+                logger.info(f"Post with id {post_id} has been set message id as {message_id}")
+                return result
+
+            elif error:
+                logger.error(f"Update post message id request failed with error: {error}")
+
+        else:
+            logger.error(f"Update post message id request failed with status code: {response.status_code}, "
+                         f"error: {error}")
