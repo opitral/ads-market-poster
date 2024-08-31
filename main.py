@@ -22,7 +22,7 @@ def main():
 
     while True:
         now = datetime.now()
-        if now.minute == 0 or now.minute == 30 or True:
+        if now.minute == 0 or now.minute == 30:
             try:
                 posts = []
                 try:

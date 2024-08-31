@@ -50,14 +50,15 @@ class Poster:
     @staticmethod
     def format_posts(posts):
         if not posts:
-            return
+            return []
 
         formatted_posts = []
         for post in posts:
             formatted_posts.append({
                 "id": post.get("id"),
                 "publication": post.get("publication"),
-                "group": post.get("groupTelegramId")
+                "group": post.get("groupTelegramId"),
+                "with_pin": post.get("withPin"),
             })
             logger.debug(f"Post with id {post.get('id')} has been formatted")
 
@@ -107,14 +108,19 @@ class Poster:
         logger.info(f"Post with id {post.get('id')} has been published to general group")
         return message.message_id
 
-    def publish_to_group(self, group_id,  message_id):
-        self.bot.forward_message(chat_id=group_id, from_chat_id=self.GENERAL_GROUP_TELEGRAM_ID, message_id=message_id)
-        logger.info(f"Post with message id {message_id} has been published to target group")
+    def publish_to_group(self, group_id,  message_id: int, with_pin: bool):
+        message = self.bot.forward_message(chat_id=group_id, from_chat_id=self.GENERAL_GROUP_TELEGRAM_ID, message_id=message_id)
+        if with_pin:
+            self.bot.pin_chat_message(message.chat.id, message.message_id)
+
+        logger.info(f"Post with message id {message_id} has been published to target group "
+                    f"{'with' if with_pin else 'without'} pin")
 
     def publish(self, post):
         group_id = post.get("group")
+        with_pin = post.get("with_pin")
         message_id = self.publish_to_general_group(post)
-        self.publish_to_group(group_id, message_id)
+        self.publish_to_group(group_id, message_id, with_pin)
         return message_id
 
     @staticmethod
