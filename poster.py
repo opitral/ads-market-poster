@@ -84,19 +84,20 @@ class Poster:
             keyboard.add(InlineKeyboardButton(text=button_name, url=button_url))
 
         if publication_type == PublicationStatus.TEXT.value:
-            message = self.bot.send_message(self.GENERAL_GROUP_TELEGRAM_ID, publication_text, reply_markup=keyboard)
+            message = self.bot.send_message(self.GENERAL_GROUP_TELEGRAM_ID, publication_text, reply_markup=keyboard,
+                                            parse_mode="HTML")
 
         elif publication_type == PublicationStatus.PHOTO.value:
             message = self.bot.send_photo(self.GENERAL_GROUP_TELEGRAM_ID, photo=publication_file_id,
-                                          caption=publication_text, reply_markup=keyboard)
+                                          caption=publication_text, reply_markup=keyboard, parse_mode="HTML")
 
         elif publication_type == PublicationStatus.VIDEO.value:
             message = self.bot.send_video(self.GENERAL_GROUP_TELEGRAM_ID, video=publication_file_id,
-                                          caption=publication_text, reply_markup=keyboard)
+                                          caption=publication_text, reply_markup=keyboard, parse_mode="HTML")
 
         elif publication_type == PublicationStatus.ANIMATION.value:
             message = self.bot.send_animation(self.GENERAL_GROUP_TELEGRAM_ID, animation=publication_file_id,
-                                              caption=publication_text, reply_markup=keyboard)
+                                              caption=publication_text, reply_markup=keyboard, parse_mode="HTML")
 
         else:
             error = f"Unknown publication type: {publication_type}"
