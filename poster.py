@@ -111,7 +111,7 @@ class Poster:
     def publish_to_group(self, group_id,  message_id: int, with_pin: bool):
         message = self.bot.forward_message(chat_id=group_id, from_chat_id=self.GENERAL_GROUP_TELEGRAM_ID, message_id=message_id)
         if with_pin:
-            self.bot.pin_chat_message(message.chat.id, message.message_id)
+            self.bot.pin_chat_message(message.chat.id, message.message_id, disable_notification=True)
 
         logger.info(f"Post with message id {message_id} has been published to target group "
                     f"{'with' if with_pin else 'without'} pin")
