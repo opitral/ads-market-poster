@@ -1,70 +1,52 @@
-import asyncio
 import logging
+from time import sleep as sl
 from datetime import datetime
 
-from logging_config import setup_logging
-from statistic import Statistic
+from enums import PostStatus
+from poster import Poster
 from config_reader import config
+from logging_config import setup_logging
 
 
 setup_logging()
 logger = logging.getLogger()
 
 
-async def main():
+def sleep(seconds: int):
+    logger.debug(f"Sleeping for {seconds} seconds")
+    sl(seconds)
+
+
+def main():
+    poster = Poster(config.BOT_TOKEN.get_secret_value(), config.GENERAL_CHANNEL_TELEGRAM_ID)
+
     while True:
-        date = datetime.now()
-        if date.weekday() != 6:
-            logger.debug("It's not Sunday")
-            await asyncio.sleep(60 * 60)
-
-        logger.info("It's Sunday")
-        statistic = Statistic(config.API_ID, config.API_HASH, config.GENERAL_CHANNEL_TELEGRAM_ID)
-
-        await statistic.start_bot()
-        await statistic.get_dialogs()
-        await statistic.get_messages()
-
-        try:
+        now = datetime.now()
+        if now.minute == 0 or now.minute == 30:
+            logger.debug(f"Start publishing")
             try:
-                groups = statistic.get_groups()
+                posts = poster.get_posts(now)
 
-            except Exception as ex:
-                logger.error(f"Failed to get groups: {ex}")
-                return
-
-            for group in groups:
-                try:
-                    posts = statistic.get_posts(group.get("telegram_id"))
-
-                except Exception as ex:
-                    logger.error(f"Error while getting posts for group {group.get('telegram_id')}: {ex}")
-                    continue
-
-                views = []
                 for post in posts:
                     try:
-                        views.append(await statistic.get_post_views(post))
+                        poster.publish(post)
 
                     except Exception as ex:
-                        logger.error(f"Error while getting views for post {post.get('id')}: {ex}")
+                        logger.error(f"Error publishing post {post}: {ex}")
+                        poster.set_status(post.get("id"), PostStatus.ERROR)
 
-                average_post_views = int(sum(views) / len(views))
-                logger.info(f"Average post views in group {group.get('telegram_id')}: {average_post_views} views")
+                    else:
+                        logger.info(f"Post with id {post.get('id')} published")
+                        poster.set_status(post.get("id"), PostStatus.PUBLISHED)
 
-                try:
-                    statistic.set_average_post_views(group.get("id"), average_post_views)
+            except Exception as ex:
+                logger.error(f"Error: {ex}")
 
-                except Exception as ex:
-                    logger.error(f"Error while setting average views for group {group.get('telegram_id')}: {ex}")
+            sleep(60)
 
-        except Exception as ex:
-            logger.error(f"Error: {ex}")
-
-        finally:
-            await statistic.stop_bot()
-            await asyncio.sleep(24 * 60 * 60)
+        else:
+            sleep(30)
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+if __name__ == '__main__':
+    main()
