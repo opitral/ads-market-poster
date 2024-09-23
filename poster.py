@@ -4,9 +4,8 @@ import json
 import requests
 
 from telebot import TeleBot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from enums import Endpoint, PostStatus, PublicationStatus
+from enums import Endpoint, PostStatus
 from logging_config import setup_logging
 
 
@@ -16,7 +15,7 @@ logger = logging.getLogger()
 
 class Poster:
     def __init__(self, bot_token: str, general_channel_telegram_id: str):
-        self.GENERAL_GROUP_TELEGRAM_ID = general_channel_telegram_id
+        self.GENERAL_CHANNEL_TELEGRAM_ID = general_channel_telegram_id
         self.bot = TeleBot(token=bot_token)
 
     @staticmethod
@@ -55,8 +54,7 @@ class Poster:
         formatted_posts = []
         for post in posts:
             formatted_posts.append({
-                "id": post.get("id"),
-                "publication": post.get("publication"),
+                "message_id": post.get("messageId"),
                 "group": post.get("groupTelegramId"),
                 "with_pin": post.get("withPin"),
             })
@@ -70,46 +68,9 @@ class Poster:
         formatted_posts = self.format_posts(posts)
         return formatted_posts
 
-    def publish_to_general_group(self, post):
-        publication = post.get("publication")
-        publication_type = publication.get("type")
-        publication_file_id = publication.get("fileId")
-        publication_text = publication.get("text")
-        button = publication.get("button")
-
-        keyboard = None
-        if button:
-            button_name = button.get("name")
-            button_url = button.get("url")
-            keyboard = InlineKeyboardMarkup()
-            keyboard.add(InlineKeyboardButton(text=button_name, url=button_url))
-
-        if publication_type == PublicationStatus.TEXT.value:
-            message = self.bot.send_message(self.GENERAL_GROUP_TELEGRAM_ID, publication_text, reply_markup=keyboard,
-                                            parse_mode="HTML")
-
-        elif publication_type == PublicationStatus.PHOTO.value:
-            message = self.bot.send_photo(self.GENERAL_GROUP_TELEGRAM_ID, photo=publication_file_id,
-                                          caption=publication_text, reply_markup=keyboard, parse_mode="HTML")
-
-        elif publication_type == PublicationStatus.VIDEO.value:
-            message = self.bot.send_video(self.GENERAL_GROUP_TELEGRAM_ID, video=publication_file_id,
-                                          caption=publication_text, reply_markup=keyboard, parse_mode="HTML")
-
-        elif publication_type == PublicationStatus.ANIMATION.value:
-            message = self.bot.send_animation(self.GENERAL_GROUP_TELEGRAM_ID, animation=publication_file_id,
-                                              caption=publication_text, reply_markup=keyboard, parse_mode="HTML")
-
-        else:
-            error = f"Unknown publication type: {publication_type}"
-            logger.error(error)
-            raise ValueError(error)
-
-        logger.info(f"Post with id {post.get('id')} has been published to general group")
-        return message.message_id
-
     def publish_to_group(self, group_id,  message_id: int, with_pin: bool):
-        message = self.bot.forward_message(chat_id=group_id, from_chat_id=self.GENERAL_GROUP_TELEGRAM_ID, message_id=message_id)
+        message = self.bot.forward_message(chat_id=group_id, from_chat_id=self.GENERAL_CHANNEL_TELEGRAM_ID,
+                                           message_id=message_id)
         if with_pin:
             self.bot.pin_chat_message(message.chat.id, message.message_id, disable_notification=True)
 
@@ -117,11 +78,10 @@ class Poster:
                     f"{'with' if with_pin else 'without'} pin")
 
     def publish(self, post):
+        message_id = post.get("messageId")
         group_id = post.get("group")
         with_pin = post.get("with_pin")
-        message_id = self.publish_to_general_group(post)
         self.publish_to_group(group_id, message_id, with_pin)
-        return message_id
 
     @staticmethod
     def set_status(post_id: int, status: PostStatus):
@@ -144,26 +104,3 @@ class Poster:
 
         else:
             logger.error(f"Update post status request failed with status code: {response.status_code}, error: {error}")
-
-    @staticmethod
-    def set_message_id(post_id, message_id):
-        body = {
-            "id": post_id,
-            "messageId": message_id
-        }
-
-        response = requests.put(f"{Endpoint.POST.value}", json=body)
-        result = response.json().get("result")
-        error = response.json().get("error")
-
-        if response.status_code == 200:
-            if result:
-                logger.info(f"Post with id {post_id} has been set message id as {message_id}")
-                return result
-
-            elif error:
-                logger.error(f"Update post message id request failed with error: {error}")
-
-        else:
-            logger.error(f"Update post message id request failed with status code: {response.status_code}, "
-                         f"error: {error}")

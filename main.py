@@ -37,19 +37,13 @@ def main():
 
                 for post in posts:
                     try:
-                        message_id = poster.publish(post)
+                        poster.publish(post)
                         logger.info(f"Post with id {post.get('id')} published")
 
                     except Exception as ex:
                         logger.error(f"Error publishing post {post}: {ex}")
                         poster.set_status(post.get("id"), PostStatus.ERROR)
                         continue
-
-                    try:
-                        poster.set_message_id(post.get("id"), message_id)
-
-                    except Exception as ex:
-                        logger.error(f"Error set post message id {post}: {ex}")
 
                     try:
                         poster.set_status(post.get("id"), PostStatus.PUBLISHED)

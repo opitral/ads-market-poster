@@ -8,13 +8,6 @@ class PostStatus(Enum):
     ERROR = "ERROR"
 
 
-class PublicationStatus(Enum):
-    TEXT = "TEXT"
-    PHOTO = "PHOTO"
-    VIDEO = "VIDEO"
-    ANIMATION = "ANIMATION"
-
-
 class Endpoint(Enum):
     BASE_URL = config.API_BASE_URL + "/api"
     GROUP = f"{BASE_URL}/group"
