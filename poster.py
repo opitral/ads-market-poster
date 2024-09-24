@@ -8,7 +8,6 @@ from telebot import TeleBot
 from enums import Endpoint, PostStatus
 from logging_config import setup_logging
 
-
 setup_logging()
 logger = logging.getLogger()
 
@@ -21,9 +20,9 @@ class Poster:
     @staticmethod
     def get_full_posts(publish_datetime: datetime):
         restrict = {
-                "publishDate": publish_datetime.date().strftime("%Y-%m-%d"),
-                "publishTime": publish_datetime.time().replace(second=0).strftime("%H:%M:%S"),
-                "status": PostStatus.AWAITS.value
+            "publishDate": publish_datetime.date().strftime("%Y-%m-%d"),
+            "publishTime": publish_datetime.time().replace(second=0).strftime("%H:%M:%S"),
+            "status": PostStatus.AWAITS.value
         }
         response = requests.get(Endpoint.POST.value, params={"restrict": json.dumps(restrict)})
         result = response.json().get("result")
@@ -54,6 +53,7 @@ class Poster:
         formatted_posts = []
         for post in posts:
             formatted_posts.append({
+                "id": post.get("id"),
                 "message_id": post.get("messageId"),
                 "group": post.get("groupTelegramId"),
                 "with_pin": post.get("withPin"),
@@ -68,7 +68,7 @@ class Poster:
         formatted_posts = self.format_posts(posts)
         return formatted_posts
 
-    def publish_to_group(self, group_id,  message_id: int, with_pin: bool):
+    def publish_to_group(self, group_id, message_id: int, with_pin: bool):
         message = self.bot.forward_message(chat_id=group_id, from_chat_id=self.GENERAL_CHANNEL_TELEGRAM_ID,
                                            message_id=message_id)
         if with_pin:
@@ -78,7 +78,7 @@ class Poster:
                     f"{'with' if with_pin else 'without'} pin")
 
     def publish(self, post):
-        message_id = post.get("messageId")
+        message_id = post.get("message_id")
         group_id = post.get("group")
         with_pin = post.get("with_pin")
         self.publish_to_group(group_id, message_id, with_pin)
@@ -89,7 +89,6 @@ class Poster:
             "id": post_id,
             "status": status.value
         }
-
         response = requests.put(f"{Endpoint.POST.value}", json=body)
         result = response.json().get("result")
         error = response.json().get("error")
